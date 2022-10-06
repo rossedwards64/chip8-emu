@@ -1,7 +1,10 @@
-
-#include "interpreter.h"
 #include <stdio.h>
 
+#include "interpreter.h"
+#include "gfx.h"
+
+
+bool quit = false;
 
 int main(int argc, char **argv)
 {
@@ -9,18 +12,18 @@ int main(int argc, char **argv)
     if (file == NULL) {
         printf("coulnt open file\n");
     }
-    uint16_t opcode;
+
+    init_sdl();
 
     init(file);
-    for(int i = 0; i < 20; i++) {
-        /* FETCH */
-
-        /* DECODE */
-        parse_opcode(opcode);
-
-        /* EXECUTE */
+    while(!quit) {
+        render();
+        parse_opcode();
+        handle_inputs(&quit);
+        update();
     }
 
     fclose(file);
+    close_sdl();
     return 0;
 }

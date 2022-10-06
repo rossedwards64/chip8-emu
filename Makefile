@@ -1,20 +1,23 @@
-CC 	   := gcc
-BIN    := chip8
-LIB    :=
-CFLAGS := -Wall -Wpedantic -Wextra -g3 -pedantic
+CC 	    := gcc
+BIN     := chip8
 
-SRCDIR := src
-SRCS   := $(wildcard $(SRCDIR)/*.c)
+INCLUDE := -Isdl -Isdl/include
+LINK    := -Lsdl/lib
+LIBS    := -lSDL2
+CFLAGS  := -Wall -Wpedantic -Wextra -g3 -pedantic
 
-OBJDIR := build
-OBJS   := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
+SRCDIR  := src
+SRCS    := $(wildcard $(SRCDIR)/*.c)
+
+OBJDIR  := build
+OBJS    := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(OBJDIR)
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@
 
 $(BIN): $(OBJS)
-	$(CC) -o $@ $^ $(LIB) $(CFLAGS)
+	$(CC) $(LINK) $(LIBS) $(INCLUDE) -o $@ $^ $(CFLAGS)
 
 .phony: clean
 
