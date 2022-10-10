@@ -1,7 +1,4 @@
-#include <stdio.h>
-
 #include "interpreter.h"
-#include "gfx.h"
 
 
 bool quit = false;
@@ -15,7 +12,7 @@ int main(int argc, char **argv)
 
     init_sdl();
 
-    init(file);
+    init_emu(file);
     while(!quit) {
         render();
         parse_opcode();
