@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "util.h"
 
 
 uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
@@ -74,7 +75,7 @@ void parse_opcode(chip8_t *chip8)
                             chip8->pc += 0x2;
                             break;
                         case 0xEE:
-                            //SDL_Log("RETURN\n");
+                            SDL_Log("RETURN\n");
                             /*
                             ** RET: set the program counter to the address at the top of the stack and decrement the stack pointer
                              */
@@ -82,7 +83,7 @@ void parse_opcode(chip8_t *chip8)
                     } break;
             } break;
         case 0x1:
-            //SDL_Log("JUMP TO %X\n", nnn);
+            SDL_Log("JUMP TO %X\n", nnn);
             chip8->pc = nnn; /* JMP */
             break;
         case 0x2:
@@ -98,12 +99,12 @@ void parse_opcode(chip8_t *chip8)
 
             break;
         case 0x6:
-            //SDL_Log("LOAD %X IN REGISTER %X\n", kk, x);
+            SDL_Log("LOAD %X IN REGISTER %X\n", kk, x);
             chip8->v[(cur_opcode & 0x0F00) >> 8] = cur_opcode & 0x00FF; /* LD */
             chip8->pc += 0x2;
             break;
         case 0x7:
-            //SDL_Log("ADD %X TO REGISTER %X\n", kk, x);
+            SDL_Log("ADD %X TO REGISTER %X\n", kk, x);
             chip8->v[(cur_opcode & 0x0F00) >> 8] += cur_opcode & 0x00FF; /* ADD */
             chip8->pc += 0x2;
             break;
@@ -114,7 +115,7 @@ void parse_opcode(chip8_t *chip8)
 
             break;
         case 0xA:
-            //SDL_Log("LOAD INSTRUCTION %X\n", nnn);
+            SDL_Log("LOAD INSTRUCTION %X\n", nnn);
             chip8->I = (cur_opcode & 0x0FFF) + chip8->v[0]; /* LD I */
             chip8->pc += 0x2;
             break;
@@ -127,7 +128,7 @@ void parse_opcode(chip8_t *chip8)
         case 0xD:
             {
                 uint16_t sprites[n];
-                draw(chip8->display, sprites, x, y, chip8->I);
+                draw(chip8->display, sprites, chip8->v[x], chip8->v[y], n, chip8->I);
             }
             break;
         case 0xE:
@@ -143,22 +144,39 @@ void parse_opcode(chip8_t *chip8)
 }
 
 /* OPCODE FUNCTIONS */
-void cls(bool display[WIDTH][HEIGHT])
+void cls(bool display[DIS_HEIGHT][DIS_WIDTH])
 {
-    //SDL_Log("CLEAR SCREEN\n");
-    for(uint16_t i = 0x0; i <= (WIDTH * HEIGHT); ++i) /* CLS */
-        display[i][i] = 0x0;
+    SDL_Log("CLEAR SCREEN\n");
+    for(uint16_t i = 0x0; i < DIS_HEIGHT; ++i) { /* CLS */
+        for(uint16_t j = 0x0; j < DIS_WIDTH; ++j) {
+            display[i][j] = 0x0;
+        }
+    }
 }
 
-void draw(bool display[WIDTH][HEIGHT], uint16_t sprites[], uint8_t v_x, uint8_t v_y, uint8_t addr)
+void draw(bool display[DIS_HEIGHT][DIS_WIDTH], uint16_t sprites[], uint8_t v_x, uint8_t v_y, uint16_t n, uint16_t I)
 {
-    //SDL_Log("DRAW %X BYTES TO REGISTERS %X AND %X\n", n, y, x);
-    for(uint16_t i = 0; i < sizeof(*sprites); i++) {
-        sprites[i] = addr;
-        addr++;
-        display[v_x + i][v_y + i] ^= sprites[i];
-    }
+    SDL_Log("DRAW %lX BYTES TO REGISTERS %X AND %X\n", sizeof(*sprites), v_x, v_y);
+    uint8_t y = v_y & (DIS_HEIGHT - 1);
+    uint8_t x = v_x & (DIS_WIDTH - 1);
 
+    for(uint16_t i = 0; i < n; i++) {
+        sprites[i] = I;
+
+        for(uint16_t j = 0; j < x; j++) {
+            if(display[y][x] == 1 && sprites[i] == 1)
+                display[y][x] = 0;
+            else if(display[y][x] == 0 && sprites[i] == 1)
+                display[y][x] = 1;
+            if(x > DIS_WIDTH)
+                break;
+            x++;
+        }
+
+        y++;
+        if(y > DIS_HEIGHT)
+            break;
+    }
 }
 
 void update_delay(uint8_t v_x, uint8_t *dt)

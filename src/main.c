@@ -20,7 +20,6 @@ int main(int argc, char **argv)
         parse_opcode(chip8);
         render(chip8->display);
         handle_inputs(&quit);
-        update();
     }
 
     fclose(file);

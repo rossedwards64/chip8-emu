@@ -1,6 +1,5 @@
 #include "gfx.h"
-#include <SDL2/SDL_render.h>
-#include <stdint.h>
+#include "util.h"
 
 
 SDL_Renderer *renderer;
@@ -26,27 +25,19 @@ int init_sdl()
     return 0;
 }
 
-void update()
+void render(bool display[DIS_HEIGHT][DIS_WIDTH])
 {
-
-}
-
-void render(bool display[WIDTH][HEIGHT])
-{
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    uint16_t w = WIN_WIDTH / WIDTH;
-    uint16_t h = WIN_HEIGHT / HEIGHT;
+    uint16_t w = WIN_WIDTH / DIS_WIDTH;
+    uint16_t h = WIN_HEIGHT / DIS_HEIGHT;
 
-    for(uint8_t i = 0; i < WIDTH; i++) {
-        for(uint8_t j = 0; j < HEIGHT; j++) {
-            SDL_Rect rect = { i * w, j * h, w, h };
-            if(display[i][j] == 1) {
+    for(uint8_t i = 0; i < DIS_WIDTH; i++) {
+        for(uint8_t j = 0; j < DIS_HEIGHT; j++) {
+            if(display[j][i] == 1) {
+                SDL_Rect rect = { i * w, j * h, w, h };
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-                SDL_RenderFillRect(renderer, &rect);
-            }
-            else if(display[i][j] == 0) {
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderFillRect(renderer, &rect);
             }
         }

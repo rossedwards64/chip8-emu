@@ -11,16 +11,11 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
 
-#define WIN_WIDTH 1280
-#define WIN_HEIGHT 720
-#define WIDTH 64
-#define HEIGHT 32
-#define BLACK 0
-#define WHITE 0
+#include "util.h"
+
 
 int init_sdl();
-void update();
-void render(bool display[WIDTH][HEIGHT]);
+void render(bool display[DIS_HEIGHT][DIS_WIDTH]);
 void handle_inputs(bool *quit);
 void close_sdl();
 
