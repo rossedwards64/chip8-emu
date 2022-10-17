@@ -15,7 +15,8 @@
 
 
 int init_sdl();
-void render(bool display[DIS_HEIGHT][DIS_WIDTH]);
+void print(bool display[DIS_ROWS][DIS_COLS]);
+void render(bool (*display)[DIS_COLS]);
 void handle_inputs(bool *quit);
 void close_sdl();
 

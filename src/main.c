@@ -12,13 +12,20 @@ int main(int argc, char **argv)
     else
         printf("Opened file.\n");
 
-    chip8_t *chip8;
-    init_sdl();
-    init_emu(file, chip8);
+    chip8_t chip8;
+
+    if(init_sdl() > 0)
+        return EXIT_FAILURE;
+
+    if(init_emu(file, &chip8) > 0)
+        return EXIT_FAILURE;
 
     while(!quit) {
-        parse_opcode(chip8);
-        render(chip8->display);
+        #ifdef DEBUG
+        print_op(&chip8);
+        #endif
+        parse_opcode(&chip8);
+        render(chip8.display);
         handle_inputs(&quit);
     }
 

@@ -18,7 +18,7 @@ typedef struct chip_8 {
             uint8_t sp;
 
             /* REGISTERS */
-            uint8_t v[16];           // registers go from v0 to vf, do not use vf
+            uint8_t v[16];           // registers go from v0 to vf
             uint16_t pc;             // program memory starts at 0x200
             uint16_t I;              // stores memory addresses
 
@@ -27,18 +27,23 @@ typedef struct chip_8 {
             uint8_t st;
 
             /* GRAPHICS */
-            bool display[DIS_HEIGHT][DIS_WIDTH];
+            bool display[DIS_ROWS][DIS_COLS];
+
+            uint8_t key[16];
         };
     };
 } chip8_t;
 
-
+#ifdef DEBUG
+void print_mem(chip8_t *chip8);
+void print_op(chip8_t *chip8);
+#endif
 int init_emu(FILE *buffer, chip8_t *chip8);
 void parse_opcode(chip8_t *chip8);
 
 /* OPCODE FUNCTIONS */
-void cls(bool display[DIS_HEIGHT][DIS_WIDTH]);
-void draw(bool display[DIS_HEIGHT][DIS_WIDTH], uint16_t sprites[], uint8_t v_x, uint8_t v_y, uint16_t n, uint16_t I);
+void cls(bool (*display)[DIS_COLS]);
+void draw(bool (*display)[DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n);
 void update_delay(uint8_t v_x, uint8_t *dt);
 void update_sound(uint8_t v_x, uint8_t *st);
 /* void dump_register(uint8_t v_x, uint8_t *instr); */

@@ -2,7 +2,7 @@ CC 	    := gcc
 BIN     ?= chip8
 
 LDLIBS  := -lSDL2 -lSDL2main
-CFLAGS  := -Wall -Wpedantic -Wextra -g3 -pedantic
+CFLAGS  := -std=c11 -Wall -Wpedantic -Wextra -g3 -pedantic
 
 SRCDIR  ?= src
 SRCS    := $(wildcard $(SRCDIR)/*.c)

@@ -15,7 +15,7 @@ int init_sdl()
         SDL_Log("Initialised SDL!\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_WIDTH, WIN_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer) < 0) {
+    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE, &window, &renderer) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
         return 1;
     } else {
@@ -25,19 +25,31 @@ int init_sdl()
     return 0;
 }
 
-void render(bool display[DIS_HEIGHT][DIS_WIDTH])
+#ifdef DEBUG
+void print(bool display[DIS_ROWS][DIS_COLS])
 {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    for(int i = 0; i < DIS_COLS; i++) {
+        printf("[");
+        for(int j = 0; j < DIS_ROWS; j++)
+            printf("%d ", display[i][j]);
+        printf("]\n");
+    }
+}
+#endif
+
+void render(bool (*display)[DIS_COLS])
+{
+    SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xFF);
     SDL_RenderClear(renderer);
 
-    uint16_t w = WIN_WIDTH / DIS_WIDTH;
-    uint16_t h = WIN_HEIGHT / DIS_HEIGHT;
+    uint16_t w = WIN_ROWS / DIS_ROWS;
+    uint16_t h = WIN_COLS / DIS_COLS;
 
-    for(uint8_t i = 0; i < DIS_WIDTH; i++) {
-        for(uint8_t j = 0; j < DIS_HEIGHT; j++) {
-            if(display[j][i] == 1) {
-                SDL_Rect rect = { i * w, j * h, w, h };
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    for(uint8_t y = 0x0; y < DIS_ROWS; ++y) {
+        for(uint8_t x = 0x0; x < DIS_COLS; ++x) {
+            if(display[x][y] == 1) {
+                SDL_Rect rect = { x * w, y * h, w, h };
+                SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
                 SDL_RenderFillRect(renderer, &rect);
             }
         }
@@ -49,11 +61,9 @@ void render(bool display[DIS_HEIGHT][DIS_WIDTH])
 void handle_inputs(bool *quit)
 {
     while(SDL_PollEvent(&e) != 0) {
-        if(e.type == SDL_QUIT) { *quit = true; }
         switch(e.type) {
             case SDL_KEYDOWN:
                 switch(e.key.keysym.sym) {
-
                     case SDLK_0:
                         SDL_Log("Pressed 0");
                         break;
