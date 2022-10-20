@@ -1,5 +1,4 @@
 #include "interpreter.h"
-#include "util.h"
 
 
 uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
@@ -35,7 +34,7 @@ void print_op(chip8_t *chip8)
     uint16_t pc = chip8->pc;
     uint16_t I = chip8->I;
 
-    printf("\r sp: 0x%02x, pc: 0x%02x, I: 0x%02x ", sp, pc, I);
+    printf("\r sp: 0x%04X, pc: 0x%04X, I: 0x%04X ", sp, pc, I);
 
     fflush(stdout);
 }
@@ -44,10 +43,11 @@ void print_op(chip8_t *chip8)
 // set up interpreter state, set memory and registers to zero
 int init_emu(FILE *buffer, chip8_t *chip8)
 {
-    memset(&chip8->mem, 0, sizeof(chip8->mem));
-    memset(&chip8->v, 0, sizeof(chip8->v));
-    memset(&chip8->stack, 0, sizeof(chip8->stack));
-    memset(&chip8->key, 0, sizeof(chip8->key));
+    memset(&(chip8->display), 0, sizeof(chip8->display));
+    memset(&(chip8->mem), 0, sizeof(chip8->mem));
+    memset(&(chip8->v), 0, sizeof(chip8->v));
+    memset(&(chip8->stack), 0, sizeof(chip8->stack));
+    memset(&(chip8->key), 0, sizeof(chip8->key));
     chip8->I = 0;
     chip8->sp = 0;
     chip8->dt = 0;
@@ -58,31 +58,26 @@ int init_emu(FILE *buffer, chip8_t *chip8)
         chip8->mem[j] = fontset[i];
     SDL_Log("Loaded font into memory.\n");
 
-    uint16_t i = chip8->pc;
-    uint16_t c;
-    while(fread(&c, sizeof(uint16_t), 1, buffer) > 0) {
-        chip8->mem[i] = c << 8;
-        chip8->mem[i + 1] = c;
-        i += 2;
-    }
+    fread(&chip8->mem[0x200], 1, PROG_SIZE, buffer);
+
     SDL_Log("Loaded program into memory.\n");
     SDL_Log("Initialised interpreter.\n");
 
     return 0;
 }
 
-void parse_opcode(chip8_t *chip8)
+int parse_opcode(chip8_t *chip8)
 {
     uint16_t cur_opcode = (chip8->mem[chip8->pc] << 8) | (chip8->mem[chip8->pc + 1]);
-    /* SDL_Log("Got opcode 0x%02X\n", cur_opcode); */
     chip8->pc += 2;
 
-    uint8_t p    = (cur_opcode >> 12);    /* 0xF000 - top 4 bits */
-    uint8_t x    = (cur_opcode >> 8);     /* 0x0F00 - lower 4 bits of the top byte */
-    uint8_t y    = (cur_opcode >> 4);     /* 0x00F0 - upper 4 bits of the lowest byte */
-    uint8_t n    = (cur_opcode) & 0x000F; /* 0x000F - lowest 4 bits */
-    uint8_t kk   = (cur_opcode) & 0x00FF; /* 0x00FF - lowest 8 bits */
-    uint16_t nnn = (cur_opcode) & 0x0FFF; /* 0x0FFF - lowest 12 bits */
+    const uint8_t p    = (cur_opcode >> 12) & 0x000F; /* 0xF000 - top 4 bits */
+    const uint8_t x    = (cur_opcode >> 8)  & 0x000F; /* 0x0F00 - lower 4 bits of the top byte */
+    const uint8_t y    = (cur_opcode >> 4)  & 0x000F; /* 0x00F0 - upper 4 bits of the lowest byte */
+    const uint8_t n    = (cur_opcode)       & 0x000F; /* 0x000F - lowest 4 bits */
+    const uint8_t kk   = (cur_opcode)       & 0x00FF; /* 0x00FF - lowest 8 bits */
+    const uint16_t nnn = (cur_opcode)       & 0x0FFF; /* 0x0FFF - lowest 12 bits */
+    uint8_t drawn = 0;
 
     switch(p) {
         case 0x0:
@@ -90,149 +85,158 @@ void parse_opcode(chip8_t *chip8)
                 case 0x0:
                     switch(kk) {
                         case 0xE0:
+                            SDL_Log("0x%04X: CLEAR SCREEN\n", cur_opcode);
                             cls(chip8->display);
+                            drawn = 1;
                             break;
                         case 0xEE:
-                            SDL_Log("RETURN\n");
+                            SDL_Log("0x%04X: RETURN\n", cur_opcode);
                             break;
                     } break;
             } break;
         case 0x1:
-            SDL_Log("JUMP TO 0x%02X\n", nnn);
+            SDL_Log("0x%04X: JUMP TO 0x%04X\n", cur_opcode, nnn);
+            chip8->pc -= 2;
             chip8->pc = nnn;
             break;
         case 0x2:
-            SDL_Log("CALL 0x%02X\n", nnn);
+            SDL_Log("0x%04X: CALL 0x%04X\n", cur_opcode, nnn);
             break;
         case 0x3:
-            SDL_Log("SKIP IF 0x%02X == 0x%02X\n", chip8->v[x], kk);
+            SDL_Log("0x%04X: SKIP IF 0x%04X == 0x%04X\n", cur_opcode, chip8->v[x], kk);
             break;
         case 0x4:
-            SDL_Log("SKIP IF 0x%02X != 0x%02X\n", chip8->v[x], kk);
+            SDL_Log("0x%04X: SKIP IF 0x%04X != 0x%04X\n", cur_opcode, chip8->v[x], kk);
             break;
         case 0x5:
-            SDL_Log("SKIP IF 0x%02X == 0x%02X\n", chip8->v[x], chip8->v[y]);
+            SDL_Log("0x%04X: SKIP IF 0x%04X == 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
             break;
         case 0x6:
-            SDL_Log("LOAD 0x%02X IN REGISTER 0x%02X\n", kk, x);
+            SDL_Log("0x%04X: LOAD 0x%04X IN REGISTER 0x%04X\n", cur_opcode, kk, x);
             chip8->v[x] = kk;
             break;
         case 0x7:
-            SDL_Log("ADD 0x%02X TO REGISTER 0x%02X\n", kk, x);
+            SDL_Log("0x%04X: ADD 0x%04X TO REGISTER 0x%04X\n", cur_opcode, kk, x);
             chip8->v[x] += kk;
             break;
         case 0x8:
             switch (n) {
                 case 0x0:
-                    SDL_Log("SET 0x%02X TO 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: SET 0x%04X TO 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x1:
-                    SDL_Log("0x%02X OR 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: 0x%04X OR 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x2:
-                    SDL_Log("0x%02X AND 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: 0x%04X AND 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x3:
-                    SDL_Log("0x%02X XOR 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: 0x%04X XOR 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x4:
-                    SDL_Log("0x%02X ADD 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: 0x%04X ADD 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x5:
-                    SDL_Log("0x%02X SUB 0x%02X\n", chip8->v[x], chip8->v[y]);
+                    SDL_Log("0x%04X: 0x%04X SUB 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
                     break;
                 case 0x6:
-                    SDL_Log("SHIFT REGISTER 0x%02X RIGHT\n", chip8->v[x]);
+                    SDL_Log("0x%04X: SHIFT REGISTER 0x%04X RIGHT\n", cur_opcode, chip8->v[x]);
                     break;
                 case 0x7:
-                    SDL_Log("0x%02X SUB 0x%02X\n", chip8->v[y], chip8->v[x]);
+                    SDL_Log("0x%04X: 0x%04X SUB 0x%04X\n", cur_opcode, chip8->v[y], chip8->v[x]);
                     break;
                 case 0xE:
-                    SDL_Log("SHIFT REGISTER 0x%02X LEFT\n", chip8->v[x]);
+                    SDL_Log("0x%04X: SHIFT REGISTER 0x%04X LEFT\n", cur_opcode, chip8->v[x]);
                     break;
             }
             break;
         case 0x9:
-            SDL_Log("SKIP IF 0x%02X != 0x%02X\n", chip8->v[x], chip8->v[y]);
+            SDL_Log("0x%04X: SKIP IF 0x%04X != 0x%04X\n", cur_opcode, chip8->v[x], chip8->v[y]);
             break;
         case 0xA:
-            SDL_Log("LOAD INSTR 0x%02X\n", nnn);
+            SDL_Log("0x%04X: LOAD INSTR 0x%04X\n", cur_opcode, nnn);
             chip8->I = nnn;
             break;
         case 0xB:
-            SDL_Log("JUMP TO ADDR 0x%02X\n", chip8->v[0] + nnn);
+            SDL_Log("0x%04X: JUMP TO ADDR 0x%04X\n", cur_opcode, chip8->v[0] + nnn);
             break;
         case 0xC:
-            SDL_Log("SET REGISTER 0x%02X TO RAND NUM 0x%02X\n", chip8->v[x], kk);
+            SDL_Log("0x%04X: SET REGISTER 0x%04X TO RAND NUM 0x%04X\n", cur_opcode, chip8->v[x], kk);
             break;
         case 0xD:
-            draw(chip8->display, chip8->mem, chip8->I, chip8->v[x], chip8->v[y], n);
+            SDL_Log("0x%04X: DRAW 0x%04X BYTES TO REGISTERS 0x%04X AND 0x%04X\n", cur_opcode, n, chip8->v[x], chip8->v[y]);
+            draw(chip8->display, chip8->mem, chip8->I, chip8->v[x], chip8->v[y], n, &(chip8->v[0xF]));
+            drawn = 1;
             break;
         case 0xE:
             switch(kk) {
                 case 0x9E:
-                    SDL_Log("SKIP IF 0x%02X IS PRESSED\n", chip8->v[x]);
+                    SDL_Log("0x%04X: SKIP IF 0x%04X IS PRESSED\n", cur_opcode, chip8->v[x]);
                     break;
                 case 0xA1:
-                    SDL_Log("SKIP IF 0x%02X IS NOT PRESSED\n", chip8->v[8]);
+                    SDL_Log("0x%04X: SKIP IF 0x%04X IS NOT PRESSED\n", cur_opcode, chip8->v[x]);
                     break;
             }
             break;
         case 0xF:
             switch(kk) {
                 case 0x07:
-                    SDL_Log("SET REGISTER 0x%02X TO DELAY TIMER\n", chip8->v[x]);
+                    SDL_Log("0x%04X: SET REGISTER 0x%04X TO DELAY TIMER\n", cur_opcode, chip8->v[x]);
                     break;
                 case 0x0A:
-                    SDL_Log("WAIT FOR KEY\n");
+                    SDL_Log("0x%04X: WAIT FOR KEY\n", cur_opcode);
                     break;
                 case 0x15:
-                    SDL_Log("SET DELAY TIMER TO REGISTER 0x%02X", chip8->v[x]);
+                    SDL_Log("0x%04X: SET DELAY TIMER TO REGISTER 0x%04X", cur_opcode, chip8->v[x]);
                     break;
                 case 0x18:
-                    SDL_Log("SET SOUND TIMER TO 0x%02X\n", chip8->v[x]);
+                    SDL_Log("0x%04X: SET SOUND TIMER TO 0x%04X\n", cur_opcode, chip8->v[x]);
                     break;
                 case 0x1E:
-                    SDL_Log("ADD INSTR 0x%02X AND REGISTER 0x%02X\n", chip8->I, chip8->v[x]);
+                    SDL_Log("0x%04X: ADD INSTR 0x%04X AND REGISTER 0x%04X\n", cur_opcode, chip8->I, chip8->v[x]);
                     break;
                 case 0x29:
-                    SDL_Log("SET INSTR 0x%02X TO SPRITE 0x%02X\n", chip8->I, chip8->v[x]);
+                    SDL_Log("0x%04X: SET INSTR 0x%04X TO SPRITE 0x%04X\n", cur_opcode, chip8->I, chip8->v[x]);
                     break;
                 case 0x33:
-                    SDL_Log("SET DIGITS IN REGISTER 0x%02X TO INSTRS 0x%02X 0x%02X 0x%02X\n", chip8->v[x], chip8->I, chip8->I + 1, chip8->I + 2);
+                    SDL_Log("0x%04X: SET DIGITS IN REGISTER 0x%04X TO INSTRS 0x%04X 0x%04X 0x%04X\n", cur_opcode, chip8->v[x], chip8->I, chip8->I + 1, chip8->I + 2);
                     break;
                 case 0x55:
-                    SDL_Log("LOAD ALL REGISTERS UP TO 0x%02X STARTING AT LOCATION 0x%02X\n", chip8->v[x], chip8->I);
+                    SDL_Log("0x%04X: LOAD ALL REGISTERS UP TO 0x%04X STARTING AT LOCATION 0x%04X\n", cur_opcode, chip8->v[x], chip8->I);
                     break;
                 case 0x65:
-                    SDL_Log("READ ALL REGISTERS UP TO 0x%02X STARTING AT LOCATION 0x%02X\n", chip8->v[x], chip8->I);
+                    SDL_Log("0x%04X: READ ALL REGISTERS UP TO 0x%04X STARTING AT LOCATION 0x%04X\n", cur_opcode, chip8->v[x], chip8->I);
                     break;
             }
             break;
         default:
-            SDL_Log("Unknown opcode: 0x%02X\n", cur_opcode);
+            SDL_Log("Unknown opcode: 0x%04X\n", cur_opcode);
             break;
     }
+    return drawn;
 }
 
 /* OPCODE FUNCTIONS */
-void cls(bool (*display)[DIS_COLS])
+void cls(bool display[DIS_ROWS][DIS_COLS])
 {
-    SDL_Log("CLEAR SCREEN\n");
-    memset(display, 0, sizeof(display[0][0]) * DIS_ROWS * DIS_COLS);
+    memset(display, 0, sizeof(*display));
 }
 
-void draw(bool (*display)[DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n)
+void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag)
 {
-    SDL_Log("DRAW 0x%02X BYTES TO REGISTERS 0x%02X AND 0x%02X\n", DIS_ROWS * DIS_COLS, v_x, v_y);
     uint16_t pixel;
+    uint8_t y = 0, x = 0;
 
-    for(uint16_t i = 0; i < n; i++) { // rows
+    for(uint16_t i = 0; i < n; ++i) { // rows
+        if(y >= DIS_ROWS) break;
         pixel = mem[I + i];
-        for(uint16_t j = 0; j < 8; j++) { // cols
-            uint8_t x = (v_x + i) % DIS_ROWS;
-            uint8_t y = (v_y + j) % DIS_COLS;
+        for(uint16_t j = 0; j < 8; ++j) {
+            if(x >= DIS_COLS) break;
+            y = (v_y + i) % DIS_ROWS;
+            x = (v_x + j) % DIS_COLS;
             if((pixel & (0x80 >> j)) != 0) {
+                if(display[y][x] == 1)
+                    *coll_flag = 1;
                 display[y][x] ^= 1;
             }
         }

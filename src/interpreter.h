@@ -10,28 +10,24 @@
 
 
 typedef struct chip_8 {
-    union {
-        uint8_t mem[0x1000]; // 4KB of RAM
+        uint8_t mem[MEM_SIZE]; // 4KB of RAM
 
-        struct {
-            uint16_t stack[16];      // can fit sixteen instructions on the stack at a time
-            uint8_t sp;
+        uint16_t stack[16];    // can fit sixteen instructions on the stack at a time
+        uint8_t sp;
 
-            /* REGISTERS */
-            uint8_t v[16];           // registers go from v0 to vf
-            uint16_t pc;             // program memory starts at 0x200
-            uint16_t I;              // stores memory addresses
+        /* REGISTERS */
+        uint8_t v[16];         // registers go from v0 to vf
+        uint16_t pc;           // program memory starts at 0x200
+        uint16_t I;            // stores memory addresses
 
-            /* TIMERS */
-            uint8_t dt;
-            uint8_t st;
+        /* TIMERS */
+        uint8_t dt;
+        uint8_t st;
 
-            /* GRAPHICS */
-            bool display[DIS_ROWS][DIS_COLS];
+        /* GRAPHICS */
+        bool display[DIS_ROWS][DIS_COLS];
 
-            uint8_t key[16];
-        };
-    };
+        bool key[16];
 } chip8_t;
 
 #ifdef DEBUG
@@ -39,11 +35,11 @@ void print_mem(chip8_t *chip8);
 void print_op(chip8_t *chip8);
 #endif
 int init_emu(FILE *buffer, chip8_t *chip8);
-void parse_opcode(chip8_t *chip8);
+int parse_opcode(chip8_t *chip8);
 
 /* OPCODE FUNCTIONS */
-void cls(bool (*display)[DIS_COLS]);
-void draw(bool (*display)[DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n);
+void cls(bool display[DIS_ROWS][DIS_COLS]);
+void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag);
 void update_delay(uint8_t v_x, uint8_t *dt);
 void update_sound(uint8_t v_x, uint8_t *st);
 /* void dump_register(uint8_t v_x, uint8_t *instr); */

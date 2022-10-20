@@ -1,5 +1,7 @@
 #include "gfx.h"
 #include "util.h"
+#include <stdint.h>
+#include <string.h>
 
 
 SDL_Renderer *renderer;
@@ -12,14 +14,14 @@ int init_sdl()
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL could not be initialised. %s.\n", SDL_GetError());
         return 1;
     } else {
-        SDL_Log("Initialised SDL!\n");
+        SDL_Log("Initialised SDL.\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE, &window, &renderer) < 0) {
+    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
         return 1;
     } else {
-        SDL_Log("Created window and renderer!\n");
+        SDL_Log("Created window and renderer.\n");
     }
 
     return 0;
@@ -42,75 +44,91 @@ void render(bool (*display)[DIS_COLS])
     SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xFF);
     SDL_RenderClear(renderer);
 
-    uint16_t w = WIN_ROWS / DIS_ROWS;
-    uint16_t h = WIN_COLS / DIS_COLS;
+    const uint16_t SCALED_ROWS = WIN_ROWS / DIS_ROWS;
+    const uint16_t SCALED_COLS = WIN_COLS / DIS_COLS;
 
     for(uint8_t y = 0x0; y < DIS_ROWS; ++y) {
         for(uint8_t x = 0x0; x < DIS_COLS; ++x) {
-            if(display[x][y] == 1) {
-                SDL_Rect rect = { x * w, y * h, w, h };
+            if(display[y][x] == 1) {
+                SDL_Rect rect = { x * SCALED_ROWS, y * SCALED_COLS, SCALED_ROWS, SCALED_COLS };
                 SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
                 SDL_RenderFillRect(renderer, &rect);
             }
         }
     }
-
     SDL_RenderPresent(renderer);
 }
 
-void handle_inputs(bool *quit)
+void handle_inputs(bool *quit, bool key[16])
 {
+    memset(key, 0, sizeof(*key));
     while(SDL_PollEvent(&e) != 0) {
         switch(e.type) {
             case SDL_KEYDOWN:
                 switch(e.key.keysym.sym) {
                     case SDLK_0:
                         SDL_Log("Pressed 0");
+                        key[0x0] = 1;
                         break;
                     case SDLK_1:
                         SDL_Log("Pressed 1");
+                        key[0x1] = 1;
                         break;
                     case SDLK_2:
                         SDL_Log("Pressed 2");
+                        key[0x2] = 1;
                         break;
                     case SDLK_3:
                         SDL_Log("Pressed 3");
+                        key[0x3] = 1;
                         break;
                     case SDLK_4:
                         SDL_Log("Pressed 4");
+                        key[0x4] = 1;
                         break;
                     case SDLK_5:
                         SDL_Log("Pressed 5");
+                        key[0x5] = 1;
                         break;
                     case SDLK_6:
                         SDL_Log("Pressed 6");
+                        key[0x6] = 1;
                         break;
                     case SDLK_7:
                         SDL_Log("Pressed 7");
+                        key[0x7] = 1;
                         break;
                     case SDLK_8:
                         SDL_Log("Pressed 8");
+                        key[0x8] = 1;
                         break;
                     case SDLK_9:
                         SDL_Log("Pressed 9");
+                        key[0x9] = 1;
                         break;
                     case SDLK_a:
                         SDL_Log("Pressed A");
+                        key[0xA] = 1;
                         break;
                     case SDLK_b:
                         SDL_Log("Pressed B");
+                        key[0xB] = 1;
                         break;
                     case SDLK_c:
                         SDL_Log("Pressed C");
+                        key[0xC] = 1;
                         break;
                     case SDLK_d:
                         SDL_Log("Pressed D");
+                        key[0xD] = 1;
                         break;
                     case SDLK_e:
                         SDL_Log("Pressed E");
+                        key[0xE] = 1;
                         break;
                     case SDLK_f:
                         SDL_Log("Pressed F");
+                        key[0xF] = 1;
                         break;
                     case SDLK_ESCAPE: case SDLK_q:
                         *quit = true;

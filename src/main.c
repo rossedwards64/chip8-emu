@@ -1,16 +1,20 @@
+#include <stdint.h>
+
 #include "interpreter.h"
 #include "gfx.h"
 
+#undef DEBUG
 
 bool quit = false;
 
 int main(int argc, char **argv)
 {
-    FILE *file = fopen("programs/IBM Logo.ch8", "rb");
+    const char* filename = "programs/IBM Logo.ch8";
+    FILE *file = fopen(filename, "rb");
     if (file == NULL)
         printf("Couldn't open file.\n");
     else
-        printf("Opened file.\n");
+        printf("Opened file %s.\n", filename);
 
     chip8_t chip8;
 
@@ -26,7 +30,7 @@ int main(int argc, char **argv)
         #endif
         parse_opcode(&chip8);
         render(chip8.display);
-        handle_inputs(&quit);
+        handle_inputs(&quit, chip8.key);
     }
 
     fclose(file);
