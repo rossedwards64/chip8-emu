@@ -38,10 +38,10 @@ int init_emu(FILE *buffer, chip8_t *chip8);
 int parse_opcode(chip8_t *chip8);
 
 /* OPCODE FUNCTIONS */
-void cls(bool display[DIS_ROWS][DIS_COLS]);
-void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag);
-void update_delay(uint8_t v_x, uint8_t *dt);
-void update_sound(uint8_t v_x, uint8_t *st);
+void cls(bool (*display)[DIS_ROWS][DIS_COLS]);
+void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag);
+void update_delay(uint8_t *dt, uint8_t v_x);
+void update_sound(uint8_t *st, uint8_t v_x);
 /* void dump_register(uint8_t v_x, uint8_t *instr); */
 /* void load_register(uint8_t v_x, uint8_t *instr); */
 

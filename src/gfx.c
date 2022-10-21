@@ -1,7 +1,4 @@
 #include "gfx.h"
-#include "util.h"
-#include <stdint.h>
-#include <string.h>
 
 
 SDL_Renderer *renderer;
@@ -17,7 +14,7 @@ int init_sdl()
         SDL_Log("Initialised SDL.\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
+    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
         return 1;
     } else {
@@ -39,7 +36,7 @@ void print(bool display[DIS_ROWS][DIS_COLS])
 }
 #endif
 
-void render(bool (*display)[DIS_COLS])
+void render(bool display[DIS_ROWS][DIS_COLS])
 {
     SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xFF);
     SDL_RenderClear(renderer);

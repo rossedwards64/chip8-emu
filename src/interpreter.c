@@ -43,22 +43,22 @@ void print_op(chip8_t *chip8)
 // set up interpreter state, set memory and registers to zero
 int init_emu(FILE *buffer, chip8_t *chip8)
 {
-    memset(&(chip8->display), 0, sizeof(chip8->display));
-    memset(&(chip8->mem), 0, sizeof(chip8->mem));
-    memset(&(chip8->v), 0, sizeof(chip8->v));
-    memset(&(chip8->stack), 0, sizeof(chip8->stack));
-    memset(&(chip8->key), 0, sizeof(chip8->key));
+    cls(&(chip8->display));
+    memset(chip8->mem, 0, sizeof(chip8->mem));
+    memset(chip8->v, 0, sizeof(chip8->v));
+    memset(chip8->stack, 0, sizeof(chip8->stack));
+    memset(chip8->key, 0, sizeof(chip8->key));
     chip8->I = 0;
     chip8->sp = 0;
     chip8->dt = 0;
     chip8->st = 0;
-    chip8->pc = 0x200;
+    chip8->pc = PROG_START;
 
     for(uint8_t i = 0x0, j = 0x50; j <= 0x9F; ++i, ++j)
         chip8->mem[j] = fontset[i];
     SDL_Log("Loaded font into memory.\n");
 
-    fread(&chip8->mem[0x200], 1, PROG_SIZE, buffer);
+    fread(&chip8->mem[PROG_START], 1, PROG_SIZE, buffer);
 
     SDL_Log("Loaded program into memory.\n");
     SDL_Log("Initialised interpreter.\n");
@@ -86,7 +86,7 @@ int parse_opcode(chip8_t *chip8)
                     switch(kk) {
                         case 0xE0:
                             SDL_Log("0x%04X: CLEAR SCREEN\n", cur_opcode);
-                            cls(chip8->display);
+                            cls(&(chip8->display));
                             drawn = 1;
                             break;
                         case 0xEE:
@@ -96,7 +96,6 @@ int parse_opcode(chip8_t *chip8)
             } break;
         case 0x1:
             SDL_Log("0x%04X: JUMP TO 0x%04X\n", cur_opcode, nnn);
-            chip8->pc -= 2;
             chip8->pc = nnn;
             break;
         case 0x2:
@@ -217,17 +216,17 @@ int parse_opcode(chip8_t *chip8)
 }
 
 /* OPCODE FUNCTIONS */
-void cls(bool display[DIS_ROWS][DIS_COLS])
+void cls(bool (*display)[DIS_ROWS][DIS_COLS])
 {
     memset(display, 0, sizeof(*display));
 }
 
-void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[0x1000], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag)
+void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag)
 {
-    uint16_t pixel;
+    uint16_t pixel = 0;
     uint8_t y = 0, x = 0;
 
-    for(uint16_t i = 0; i < n; ++i) { // rows
+    for(uint16_t i = 0; i < n; ++i) {
         if(y >= DIS_ROWS) break;
         pixel = mem[I + i];
         for(uint16_t j = 0; j < 8; ++j) {
@@ -243,12 +242,12 @@ void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[0x1000], uint16_t I, uin
     }
 }
 
-void update_delay(uint8_t v_x, uint8_t *dt)
+void update_delay(uint8_t *dt, uint8_t v_x)
 {
     *dt = v_x;
 }
 
-void update_sound(uint8_t v_x, uint8_t *st)
+void update_sound(uint8_t *st, uint8_t v_x)
 {
     *st = v_x;
 }
