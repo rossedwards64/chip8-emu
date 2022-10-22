@@ -10,7 +10,12 @@ bool quit = false;
 
 int main(int argc, char **argv)
 {
-    const char* filename = "programs/IBM Logo.ch8";
+    char *filename;
+    if(argv[1] == NULL)
+        filename = "programs/IBM Logo.ch8";
+    else
+        filename = argv[1];
+
     FILE *file = fopen(filename, "rb");
 
     if (file == NULL)
@@ -22,6 +27,7 @@ int main(int argc, char **argv)
 
     if(init_sdl() > 0) return EXIT_FAILURE;
     if(init_emu(file, &chip8) > 0) return EXIT_FAILURE;
+    fclose(file);
 
     while(!quit) {
         #ifdef DEBUG
@@ -33,7 +39,6 @@ int main(int argc, char **argv)
         usleep(SDL_REFRESH);
     }
 
-    fclose(file);
     close_sdl();
     return 0;
 }

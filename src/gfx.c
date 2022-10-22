@@ -14,7 +14,7 @@ int init_sdl()
         SDL_Log("Initialised SDL.\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
+    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
         return 1;
     } else {
@@ -64,73 +64,58 @@ void handle_inputs(bool *quit, bool key[16])
             case SDL_KEYDOWN:
                 switch(e.key.keysym.sym) {
                     case SDLK_0:
-                        SDL_Log("Pressed 0");
                         key[0x0] = 1;
                         break;
                     case SDLK_1:
-                        SDL_Log("Pressed 1");
                         key[0x1] = 1;
                         break;
                     case SDLK_2:
-                        SDL_Log("Pressed 2");
                         key[0x2] = 1;
                         break;
                     case SDLK_3:
-                        SDL_Log("Pressed 3");
                         key[0x3] = 1;
                         break;
                     case SDLK_4:
-                        SDL_Log("Pressed 4");
                         key[0x4] = 1;
                         break;
                     case SDLK_5:
-                        SDL_Log("Pressed 5");
                         key[0x5] = 1;
                         break;
                     case SDLK_6:
-                        SDL_Log("Pressed 6");
                         key[0x6] = 1;
                         break;
                     case SDLK_7:
-                        SDL_Log("Pressed 7");
                         key[0x7] = 1;
                         break;
                     case SDLK_8:
-                        SDL_Log("Pressed 8");
                         key[0x8] = 1;
                         break;
                     case SDLK_9:
-                        SDL_Log("Pressed 9");
                         key[0x9] = 1;
                         break;
                     case SDLK_a:
-                        SDL_Log("Pressed A");
                         key[0xA] = 1;
                         break;
                     case SDLK_b:
-                        SDL_Log("Pressed B");
                         key[0xB] = 1;
                         break;
                     case SDLK_c:
-                        SDL_Log("Pressed C");
                         key[0xC] = 1;
                         break;
                     case SDLK_d:
-                        SDL_Log("Pressed D");
                         key[0xD] = 1;
                         break;
                     case SDLK_e:
-                        SDL_Log("Pressed E");
                         key[0xE] = 1;
                         break;
                     case SDLK_f:
-                        SDL_Log("Pressed F");
                         key[0xF] = 1;
                         break;
                     case SDLK_ESCAPE: case SDLK_q:
                         *quit = true;
                         break;
             }
+                break;
         }
     }
 }

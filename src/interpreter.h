@@ -1,9 +1,11 @@
 #ifndef INTERPRETER_H_
 #define INTERPRETER_H_
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include <SDL2/SDL_log.h>
 
 #include "util.h"
@@ -35,7 +37,7 @@ void print_mem(chip8_t *chip8);
 void print_op(chip8_t *chip8);
 #endif
 int init_emu(FILE *buffer, chip8_t *chip8);
-int parse_opcode(chip8_t *chip8);
+uint8_t parse_opcode(chip8_t *chip8);
 
 /* OPCODE FUNCTIONS */
 void cls(bool (*display)[DIS_ROWS][DIS_COLS]);
