@@ -14,10 +14,11 @@ uint8_t init_sdl()
         SDL_Log("Initialised SDL.\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_ROWS, WIN_COLS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
+    if(SDL_CreateWindowAndRenderer(WIN_COLS, WIN_ROWS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
         return 1;
     } else {
+        SDL_SetWindowTitle(window, "Chip-8 Emulator");
         SDL_Log("Created window and renderer.\n");
     }
 
@@ -44,10 +45,10 @@ void render(bool display[DIS_ROWS][DIS_COLS])
     const uint16_t SCALED_ROWS = WIN_ROWS / DIS_ROWS;
     const uint16_t SCALED_COLS = WIN_COLS / DIS_COLS;
 
-    for(uint8_t y = 0x0; y < DIS_ROWS; ++y) {
-        for(uint8_t x = 0x0; x < DIS_COLS; ++x) {
+    for(uint8_t y = 0; y < DIS_ROWS; ++y) {
+        for(uint8_t x = 0; x < DIS_COLS; ++x) {
             if(display[y][x] == 1) {
-                SDL_Rect rect = { x * SCALED_ROWS, y * SCALED_COLS, SCALED_ROWS, SCALED_COLS };
+                SDL_Rect rect = { x * SCALED_COLS, y * SCALED_ROWS, SCALED_ROWS, SCALED_COLS };
                 SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
                 SDL_RenderFillRect(renderer, &rect);
             }
@@ -123,10 +124,10 @@ void handle_inputs(bool *quit, bool key[ARR_SIZE])
 void close_sdl()
 {
     puts("Destroying window and renderer...");
-    SDL_DestroyWindow(window);
-    window = NULL;
     SDL_DestroyRenderer(renderer);
     renderer = NULL;
+    SDL_DestroyWindow(window);
+    window = NULL;
     puts("Done! Closing SDL...");
     SDL_Quit();
     puts("Goodbye!");

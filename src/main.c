@@ -37,6 +37,7 @@ int main(int argc, char **argv)
         if(execute_opcode(&chip8) == SCREEN_MODIFIED)
             render(chip8.display);
         handle_inputs(&quit, chip8.key);
+        update_timers(&chip8);
         usleep(SDL_REFRESH);
     }
 

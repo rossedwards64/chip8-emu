@@ -11,10 +11,10 @@
 #define CHIP8_REFRESH 60
 #define SDL_REFRESH CHIP8_REFRESH * 1000
 
-#define WIN_ROWS 1280
-#define WIN_COLS 720
-#define DIS_ROWS 64
-#define DIS_COLS 32
+#define WIN_COLS 1280
+#define WIN_ROWS 720
+#define DIS_COLS 64
+#define DIS_ROWS 32
 
 #define BLACK 0
 #define WHITE 0xFF
