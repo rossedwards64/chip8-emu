@@ -14,10 +14,10 @@
 #include "util.h"
 
 
-int init_sdl();
+uint8_t init_sdl();
 void print(bool display[DIS_ROWS][DIS_COLS]);
 void render(bool display[DIS_ROWS][DIS_COLS]);
-void handle_inputs(bool *quit, bool key[16]);
+void handle_inputs(bool *quit, bool key[ARR_SIZE]);
 void close_sdl();
 
 #endif // GFX_H_

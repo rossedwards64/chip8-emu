@@ -40,7 +40,7 @@ void print_op(chip8_t *chip8)
 }
 #endif
 
-int init_emu(FILE *buffer, chip8_t *chip8)
+uint8_t init_emu(FILE *buffer, chip8_t *chip8)
 {
     srand(0);
     cls(&(chip8->display));
@@ -59,16 +59,17 @@ int init_emu(FILE *buffer, chip8_t *chip8)
     SDL_Log("Loaded font into memory.\n");
 
     fread(&chip8->mem[PROG_START], 1, PROG_SIZE, buffer);
+    if(ferror(buffer)) return 1;
 
     SDL_Log("Loaded program into memory.\n");
     SDL_Log("Initialised interpreter.\n");
-
     return 0;
 }
 
-uint8_t parse_opcode(chip8_t *chip8)
+uint8_t execute_opcode(chip8_t *chip8)
 {
-    uint16_t cur_opcode = (chip8->mem[chip8->pc] << 8) | (chip8->mem[chip8->pc + 1]);
+    uint8_t screen_modified = 0;
+    const uint16_t cur_opcode = (chip8->mem[chip8->pc] << 8) | (chip8->mem[chip8->pc + 1]);
     chip8->pc += 2;
 
     const uint8_t p    = (cur_opcode >> 12) & 0x000F; /* 0xF000 - top 4 bits */
@@ -77,7 +78,6 @@ uint8_t parse_opcode(chip8_t *chip8)
     const uint8_t n    = (cur_opcode)       & 0x000F; /* 0x000F - lowest 4 bits */
     const uint8_t kk   = (cur_opcode)       & 0x00FF; /* 0x00FF - lowest 8 bits */
     const uint16_t nnn = (cur_opcode)       & 0x0FFF; /* 0x0FFF - lowest 12 bits */
-    uint8_t drawn = 0;
 
     switch(p) {
         case 0x0:
@@ -86,11 +86,11 @@ uint8_t parse_opcode(chip8_t *chip8)
                     switch(kk) {
                         case 0xE0:
                             cls(&(chip8->display));
-                            drawn = 1;
+                            screen_modified = 1;
                             break;
                         case 0xEE:
-                            SDL_Log("0x%04X: RETURN\n", cur_opcode);
-                            chip8->pc = chip8->stack[0];
+                            chip8->pc = chip8->stack[chip8->sp];
+                            chip8->sp--;
                             break;
                     } break;
             } break;
@@ -98,8 +98,8 @@ uint8_t parse_opcode(chip8_t *chip8)
             chip8->pc = nnn;
             break;
         case 0x2:
-            SDL_Log("0x%04X: CALL 0x%04X\n", cur_opcode, nnn);
-            chip8->stack[0] = chip8->pc;
+            chip8->stack[chip8->sp] = chip8->pc;
+            chip8->sp++;
             chip8->pc = nnn;
             break;
         case 0x3:
@@ -135,7 +135,7 @@ uint8_t parse_opcode(chip8_t *chip8)
                     chip8->v[x] ^= chip8->v[y];
                     break;
                 case 0x4:
-                    if((chip8->v[x] += chip8->v[y]) >= 255)
+                    if(chip8->v[y] > (255 - chip8->v[x]))
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
@@ -181,14 +181,11 @@ uint8_t parse_opcode(chip8_t *chip8)
             chip8->pc = nnn + chip8->v[0];
             break;
         case 0xC:
-        {
-            uint8_t rand_num = rand() % 255;
-            chip8->v[x] = rand_num & kk;
-        }
+            chip8->v[x] = (rand() % 255) & kk;
             break;
         case 0xD:
             draw(chip8->display, chip8->mem, chip8->I, chip8->v[x], chip8->v[y], n, &(chip8->v[0xF]));
-            drawn = 1;
+            screen_modified = 1;
             break;
         case 0xE:
             switch(kk) {
@@ -208,18 +205,7 @@ uint8_t parse_opcode(chip8_t *chip8)
                     chip8->v[x] = chip8->dt;
                     break;
                 case 0x0A:
-                {
-                    bool key_pressed = false;
-                    for (uint8_t i = 0; i < 16 && !key_pressed; i++) {
-                        if(chip8->key[i] == true) {
-                            key_pressed = true;
-                            chip8->v[x] = chip8->key[i];
-                            break;
-                        }
-                    }
-                    if(key_pressed == false)
-                        chip8->pc -= 2;
-                }
+                    get_key(&(chip8->v[x]), chip8->key, &(chip8->pc));
                     break;
                 case 0x15:
                     chip8-> dt = chip8->v[x];
@@ -252,7 +238,7 @@ uint8_t parse_opcode(chip8_t *chip8)
             SDL_Log("Unknown opcode: 0x%04X\n", cur_opcode);
             break;
     }
-    return drawn;
+    return screen_modified;
 }
 
 /* OPCODE FUNCTIONS */
@@ -261,7 +247,22 @@ void cls(bool (*display)[DIS_ROWS][DIS_COLS])
     memset(display, 0, sizeof(*display));
 }
 
-void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE], uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag)
+void get_key(uint8_t *v_x, bool key[ARR_SIZE], uint16_t *pc)
+{
+    bool key_pressed = false;
+    for (uint8_t i = 0; i < 16 && !key_pressed; i++) {
+        if(key[i] == true) {
+            key_pressed = true;
+            *v_x = key[i];
+            break;
+        }
+    }
+    if(key_pressed == false)
+        *pc += 2;
+}
+
+void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE],
+          uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag)
 {
     uint16_t pixel = 0;
     uint8_t y = 0, x = 0;
@@ -281,23 +282,3 @@ void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE], uint16_t I, u
         }
     }
 }
-
-void update_delay(uint8_t *dt, uint8_t v_x)
-{
-    *dt = v_x;
-}
-
-void update_sound(uint8_t *st, uint8_t v_x)
-{
-    *st = v_x;
-}
-
-/* void dump_register(uint8_t v_x, uint8_t *instr) */
-/* { */
-
-/* } */
-
-/* void load_register(uint8_t v_x, uint8_t *instr) */
-/* { */
-
-/* } */

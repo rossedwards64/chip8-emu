@@ -5,7 +5,7 @@ SDL_Renderer *renderer;
 SDL_Window *window;
 SDL_Event e;
 
-int init_sdl()
+uint8_t init_sdl()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL could not be initialised. %s.\n", SDL_GetError());
@@ -56,7 +56,7 @@ void render(bool display[DIS_ROWS][DIS_COLS])
     SDL_RenderPresent(renderer);
 }
 
-void handle_inputs(bool *quit, bool key[16])
+void handle_inputs(bool *quit, bool key[ARR_SIZE])
 {
     memset(key, 0, sizeof(*key));
     while(SDL_PollEvent(&e) != 0) {

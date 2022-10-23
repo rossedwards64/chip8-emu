@@ -5,6 +5,7 @@
 #include "gfx.h"
 
 #undef DEBUG
+#define SCREEN_MODIFIED 1
 
 bool quit = false;
 
@@ -31,9 +32,9 @@ int main(int argc, char **argv)
 
     while(!quit) {
         #ifdef DEBUG
-        print_op(&chip8);
+        print_struct(&chip8);
         #endif
-        if(parse_opcode(&chip8))
+        if(execute_opcode(&chip8) == SCREEN_MODIFIED)
             render(chip8.display);
         handle_inputs(&quit, chip8.key);
         usleep(SDL_REFRESH);
