@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include "interpreter.h"
@@ -24,15 +25,23 @@ int main(int argc, char **argv)
     else
         printf("Opened file %s.\n", filename);
 
+    if(init_sdl() > 0) {
+        printf("Could not initialise SDL.\n");
+        return EXIT_FAILURE;
+    }
+
     chip8_t chip8;
 
-    if(init_sdl() > 0) return EXIT_FAILURE;
-    if(init_emu(file, &chip8) > 0) return EXIT_FAILURE;
+    if(init_emu(file, &chip8) > 0) {
+        printf("Could not initialise the interpreter.\n");
+        return EXIT_FAILURE;
+    }
+
     fclose(file);
 
     while(!quit) {
         #ifdef DEBUG
-        print_struct(&chip8);
+        print_struct(chip8);
         #endif
         if(execute_opcode(&chip8) == SCREEN_MODIFIED)
             render(chip8.display);

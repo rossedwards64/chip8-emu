@@ -59,7 +59,7 @@ void render(bool display[DIS_ROWS][DIS_COLS])
 
 void handle_inputs(bool *quit, bool key[ARR_SIZE])
 {
-    memset(key, 0, sizeof(*key));
+    memset(key, 0, ARR_SIZE);
     while(SDL_PollEvent(&e) != 0) {
         switch(e.type) {
             case SDL_KEYDOWN:
