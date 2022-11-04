@@ -28,14 +28,11 @@ void print_mem(chip8_t *chip8)
     printf("\n");
 }
 
-void print_op(chip8_t *chip8)
+void print_reg(chip8_t *chip8)
 {
-    uint16_t sp = chip8->sp;
-    uint16_t pc = chip8->pc;
-    uint16_t I = chip8->I;
-
-    printf("\r sp: 0x%04X, pc: 0x%04X, I: 0x%04X ", sp, pc, I);
-
+    printf("\r");
+    for(uint8_t i = 0; i < ARR_SIZE; i++)
+        printf("v[%d]: 0x%04X ", i, chip8->v[i]);
     fflush(stdout);
 }
 #endif
@@ -58,7 +55,17 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
         chip8->mem[j] = fontset[i];
     SDL_Log("Loaded font into memory.");
 
-    fread(chip8->mem + PROG_START, 1, PROG_SIZE, buffer);
+    fseek(buffer, 0, SEEK_END);
+    uint16_t file_size = ftell(buffer);
+    rewind(buffer);
+
+    if(file_size < PROG_SIZE) {
+        fread(chip8->mem + PROG_START, 1, PROG_SIZE, buffer);
+    } else {
+        SDL_Log("File size %d is larger than memory space %d", file_size, MEM_SIZE);
+        return 1;
+    }
+
     if(ferror(buffer)) return 1;
 
     SDL_Log("Loaded program into memory.");
@@ -69,7 +76,8 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
 uint8_t execute_opcode(chip8_t *chip8)
 {
     uint8_t screen_modified = 0;
-    const uint16_t cur_opcode = (chip8->mem[chip8->pc] << 8) | (chip8->mem[chip8->pc + 1]);
+
+    const uint16_t cur_opcode = (uint16_t)(((uint16_t) chip8->mem[chip8->pc]) << 8) | ((uint16_t) chip8->mem[chip8->pc + 1]);
     const uint8_t p           = (cur_opcode >> 12) & 0x000F; /* 0xF000 - top 4 bits */
     const uint8_t x           = (cur_opcode >> 8)  & 0x000F; /* 0x0F00 - lower 4 bits of the top byte */
     const uint8_t y           = (cur_opcode >> 4)  & 0x000F; /* 0x00F0 - upper 4 bits of the lowest byte */
@@ -77,6 +85,7 @@ uint8_t execute_opcode(chip8_t *chip8)
     const uint8_t kk          = (cur_opcode)       & 0x00FF; /* 0x00FF - lowest 8 bits */
     const uint16_t nnn        = (cur_opcode)       & 0x0FFF; /* 0x0FFF - lowest 12 bits */
     chip8->pc += 2;
+    //SDL_Log("0x%04X: 0x%04X", chip8->pc, cur_opcode);
 
     switch(p) {
         case 0x0:

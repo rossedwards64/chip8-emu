@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
     while(!quit) {
         #ifdef DEBUG
-        print_struct(chip8);
+        print_reg(&chip8);
         #endif
         if(execute_opcode(&chip8) == SCREEN_MODIFIED)
             render(chip8.display);

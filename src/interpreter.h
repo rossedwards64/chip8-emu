@@ -34,7 +34,7 @@ typedef struct chip_8 {
 
 #ifdef DEBUG
 void print_mem(chip8_t *chip8);
-void print_op(chip8_t *chip8);
+void print_reg(chip8_t *chip8);
 #endif
 
 uint8_t init_emu(FILE *buffer, chip8_t *chip8);

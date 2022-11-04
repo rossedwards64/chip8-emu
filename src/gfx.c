@@ -1,25 +1,39 @@
 #include "gfx.h"
 
 
-SDL_Renderer *renderer;
 SDL_Window *window;
+SDL_Renderer *renderer;
 SDL_Event e;
 
 uint8_t init_sdl()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL could not be initialised. %s.\n", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL could not be initialised. %s.\n",
+                     SDL_GetError());
         return 1;
     } else {
         SDL_Log("Initialised SDL.\n");
     }
 
-    if(SDL_CreateWindowAndRenderer(WIN_COLS, WIN_ROWS, SDL_WINDOW_RESIZABLE | SDL_RENDERER_ACCELERATED, &window, &renderer) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not create window or renderer. %s.\n", SDL_GetError());
+    window =
+        SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                         WIN_COLS, WIN_ROWS, SDL_RENDERER_ACCELERATED);
+    if(window == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window. %s.\n",
+                     SDL_GetError());
         return 1;
     } else {
-        SDL_SetWindowTitle(window, "Chip-8 Emulator");
-        SDL_Log("Created window and renderer.\n");
+        SDL_Log("Created window.\n");
+    }
+
+    renderer =
+        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if(renderer == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create renderer. %s.\n",
+                     SDL_GetError());
+        return 1;
+    } else {
+        SDL_Log("Created renderer.\n");
     }
 
     return 0;
