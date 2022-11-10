@@ -137,7 +137,7 @@ void handle_inputs(bool *quit, bool key[ARR_SIZE])
 
 void close_sdl()
 {
-    puts("Destroying window and renderer...");
+    puts("\nDestroying window and renderer...");
     SDL_DestroyRenderer(renderer);
     renderer = NULL;
     SDL_DestroyWindow(window);

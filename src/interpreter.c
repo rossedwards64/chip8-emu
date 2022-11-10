@@ -1,7 +1,7 @@
 #include "interpreter.h"
 
 
-uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
+static uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
                         0x20, 0x60, 0x20, 0x20, 0x70,   // 1
                         0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
                         0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
@@ -32,7 +32,7 @@ void print_reg(chip8_t *chip8)
 {
     printf("\r");
     for(uint8_t i = 0; i < ARR_SIZE; i++)
-        printf("v[%d]: 0x%04X ", i, chip8->v[i]);
+        printf("v%x: 0x%04X ", i, chip8->v[i]);
     fflush(stdout);
 }
 #endif
@@ -40,7 +40,7 @@ void print_reg(chip8_t *chip8)
 uint8_t init_emu(FILE *buffer, chip8_t *chip8)
 {
     srand(0);
-    cls(chip8->display);
+    memset(chip8->display, 0, sizeof(bool) * DIS_COLS * DIS_ROWS);
     memset(chip8->mem, 0, sizeof(chip8->mem) / sizeof(chip8->mem[0]));
     memset(chip8->v, 0, sizeof(chip8->v) / sizeof(chip8->v[0]));
     memset(chip8->stack, 0, sizeof(chip8->stack) / sizeof(chip8->stack[0]));
@@ -77,7 +77,7 @@ bool execute_opcode(chip8_t *chip8)
 {
     bool screen_modified = false;
 
-    const uint16_t cur_opcode = (uint16_t)(((uint16_t) chip8->mem[chip8->pc]) << 8) | ((uint16_t) chip8->mem[chip8->pc + 1]);
+    const uint16_t cur_opcode = ((chip8->mem[chip8->pc]) << 8) | (chip8->mem[chip8->pc + 1]);
     const uint8_t p           = (cur_opcode >> 12) & 0x000F; /* 0xF000 - top 4 bits */
     const uint8_t x           = (cur_opcode >> 8)  & 0x000F; /* 0x0F00 - lower 4 bits of the top byte */
     const uint8_t y           = (cur_opcode >> 4)  & 0x000F; /* 0x00F0 - upper 4 bits of the lowest byte */
@@ -93,11 +93,11 @@ bool execute_opcode(chip8_t *chip8)
                 case 0x0:
                     switch(kk) {
                         case 0xE0:
-                            cls(chip8->display);
+                            memset(chip8->display, 0, sizeof(bool) * DIS_COLS * DIS_ROWS);
                             screen_modified = true;
                             break;
                         case 0xEE:
-                            chip8->pc = chip8->stack[chip8->sp--];
+                            chip8->pc = chip8->stack[--(chip8->sp)];
                             break;
                         default:
                             SDL_Log("Unknown opcode: 0x%04X", cur_opcode);
@@ -144,10 +144,11 @@ bool execute_opcode(chip8_t *chip8)
                     chip8->v[x] ^= chip8->v[y];
                     break;
                 case 0x4:
-                    if(chip8->v[y] > (255 - chip8->v[x]))
+                    if((chip8->v[x] + chip8->v[y]) > 255)
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
+                    chip8->v[x] += chip8->v[y];
                     break;
                 case 0x5:
                     if(chip8->v[x] > chip8->v[y])
@@ -261,11 +262,6 @@ bool execute_opcode(chip8_t *chip8)
 }
 
 /* OPCODE FUNCTIONS */
-void cls(bool display[DIS_ROWS][DIS_COLS])
-{
-    memset(display, 0, sizeof(bool) * DIS_ROWS * DIS_COLS);
-}
-
 bool get_key(uint8_t *v_x, bool key[ARR_SIZE])
 {
     bool key_pressed = false;
