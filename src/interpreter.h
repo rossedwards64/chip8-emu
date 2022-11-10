@@ -38,7 +38,7 @@ void print_reg(chip8_t *chip8);
 #endif
 
 uint8_t init_emu(FILE *buffer, chip8_t *chip8);
-uint8_t execute_opcode(chip8_t *chip8);
+bool execute_opcode(chip8_t *chip8);
 void update_timers(chip8_t *chip8);
 
 /* OPCODE FUNCTIONS */

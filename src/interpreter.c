@@ -60,7 +60,7 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
     rewind(buffer);
 
     if(file_size < PROG_SIZE) {
-        fread(chip8->mem + PROG_START, 1, PROG_SIZE, buffer);
+        fread(&chip8->mem[PROG_START], 1, PROG_SIZE, buffer);
     } else {
         SDL_Log("File size %d is larger than memory space %d", file_size, MEM_SIZE);
         return 1;
@@ -73,9 +73,9 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
     return 0;
 }
 
-uint8_t execute_opcode(chip8_t *chip8)
+bool execute_opcode(chip8_t *chip8)
 {
-    uint8_t screen_modified = 0;
+    bool screen_modified = false;
 
     const uint16_t cur_opcode = (uint16_t)(((uint16_t) chip8->mem[chip8->pc]) << 8) | ((uint16_t) chip8->mem[chip8->pc + 1]);
     const uint8_t p           = (cur_opcode >> 12) & 0x000F; /* 0xF000 - top 4 bits */
@@ -85,7 +85,7 @@ uint8_t execute_opcode(chip8_t *chip8)
     const uint8_t kk          = (cur_opcode)       & 0x00FF; /* 0x00FF - lowest 8 bits */
     const uint16_t nnn        = (cur_opcode)       & 0x0FFF; /* 0x0FFF - lowest 12 bits */
     chip8->pc += 2;
-    //SDL_Log("0x%04X: 0x%04X", chip8->pc, cur_opcode);
+    SDL_Log("0x%04X: 0x%04X", chip8->pc, cur_opcode);
 
     switch(p) {
         case 0x0:
@@ -94,7 +94,7 @@ uint8_t execute_opcode(chip8_t *chip8)
                     switch(kk) {
                         case 0xE0:
                             cls(chip8->display);
-                            screen_modified = 1;
+                            screen_modified = true;
                             break;
                         case 0xEE:
                             chip8->pc = chip8->stack[chip8->sp--];
@@ -198,7 +198,7 @@ uint8_t execute_opcode(chip8_t *chip8)
             break;
         case 0xD:
             draw(chip8->display, chip8->mem, chip8->I, chip8->v[x], chip8->v[y], n, &(chip8->v[0xF]));
-            screen_modified = 1;
+            screen_modified = true;
             break;
         case 0xE:
             switch(kk) {
@@ -234,7 +234,7 @@ uint8_t execute_opcode(chip8_t *chip8)
                     chip8->I += chip8->v[x];
                     break;
                 case 0x29:
-                    chip8->I = chip8->mem[chip8->v[x]];
+                    chip8->I = BYTES_PER_CHAR_SPRITE * chip8->v[x];
                     break;
                 case 0x33:
                     convert_decimal(chip8->mem, chip8->I, &(chip8->v[x]));
@@ -246,6 +246,7 @@ uint8_t execute_opcode(chip8_t *chip8)
                 case 0x65:
                     for(uint8_t i = 0; i <= x; i++)
                         chip8->v[i] = chip8->mem[chip8->I + i];
+                    chip8->I += x + 1;
                     break;
                 default:
                     SDL_Log("Unknown opcode: 0x%04X", cur_opcode);
@@ -309,7 +310,7 @@ void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE],
 
 void convert_decimal(uint8_t mem[MEM_SIZE], uint16_t I, uint8_t *v_x)
 {
-    mem[I] = (*v_x % 10);
-    mem[I + 1] = ((*v_x / 10) % 10);
-    mem[I + 2] = ((*v_x / 100) % 10);
+    mem[I] = *v_x / 100;
+    mem[I + 1] = (*v_x % 100) / 10;
+    mem[I + 2] = *v_x % 10;
 }
