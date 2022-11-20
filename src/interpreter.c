@@ -1,5 +1,6 @@
 #include "interpreter.h"
 
+#undef DEBUG
 
 static uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
                         0x20, 0x60, 0x20, 0x20, 0x70,   // 1
@@ -85,93 +86,93 @@ bool execute_opcode(chip8_t *chip8)
     const uint8_t kk          = (cur_opcode)       & 0x00FF; /* 0x00FF - lowest 8 bits */
     const uint16_t nnn        = (cur_opcode)       & 0x0FFF; /* 0x0FFF - lowest 12 bits */
     chip8->pc += 2;
+
+    #ifdef DEBUG
     SDL_Log("0x%04X: 0x%04X", chip8->pc, cur_opcode);
+    #endif
 
     switch(p) {
         case 0x0:
-            switch(y) {
-                case 0x0:
-                    switch(kk) {
-                        case 0xE0:
-                            memset(chip8->display, 0, sizeof(bool) * DIS_COLS * DIS_ROWS);
-                            screen_modified = true;
-                            break;
-                        case 0xEE:
-                            chip8->pc = chip8->stack[--(chip8->sp)];
-                            break;
-                        default:
-                            SDL_Log("Unknown opcode: 0x%04X", cur_opcode);
-                            break;
-                    } break;
+            switch(kk) {
+                case 0xE0: /* 00E0 - CLS */
+                    memset(chip8->display, 0, sizeof(bool) * DIS_COLS * DIS_ROWS);
+                    screen_modified = true;
+                    break;
+                case 0xEE: /* 00EE - RET */
+                    chip8->pc = chip8->stack[--(chip8->sp)];
+                    break;
+                default:
+                    SDL_Log("Unknown opcode: 0x%04X", cur_opcode);
+                    break;
             } break;
-        case 0x1:
+        case 0x1: /* 1nnn JP addr */
             chip8->pc = nnn;
             break;
-        case 0x2:
+        case 0x2: /* 2nnn CALL addr */
             chip8->stack[chip8->sp++] = chip8->pc;
             chip8->pc = nnn;
             break;
-        case 0x3:
+        case 0x3: /* 3xkk - SE Vx, byte */
             if(chip8->v[x] == kk)
                 chip8->pc += 2;
             break;
-        case 0x4:
+        case 0x4: /* SNE Vx, byte */
             if(chip8->v[x] != kk)
                 chip8->pc += 2;
             break;
-        case 0x5:
+        case 0x5: /* 5xy0 - SE Vx, Vy */
             if(chip8->v[x] == chip8->v[y])
                 chip8->pc += 2;
             break;
-        case 0x6:
+        case 0x6: /* 6xkk - LD Vx, byte */
             chip8->v[x] = kk;
             break;
-        case 0x7:
+        case 0x7: /* 7xkk - ADD Vx, byte */
             chip8->v[x] += kk;
             break;
         case 0x8:
             switch (n) {
-                case 0x0:
+                case 0x0: /* 8xy0 - LD Vx, Vy */
                     chip8->v[x] = chip8->v[y];
                     break;
-                case 0x1:
+                case 0x1: /* 8xy1 - OR Vx, Vy */
                     chip8->v[x] |= chip8->v[y];
                     break;
-                case 0x2:
+                case 0x2: /* 8xy2 - AND Vx, Vy */
                     chip8->v[x] &= chip8->v[y];
                     break;
-                case 0x3:
+                case 0x3: /* 8xy3 - XOR Vx, Vy */
                     chip8->v[x] ^= chip8->v[y];
                     break;
-                case 0x4:
+                case 0x4: /* 8xy4 - ADD Vx, Vy */ /* rrx */
                     if((chip8->v[x] + chip8->v[y]) > 255)
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
                     chip8->v[x] += chip8->v[y];
                     break;
-                case 0x5:
+                case 0x5: /* 8xy5 - SUB Vx, Vy */ /* rrx */
                     if(chip8->v[x] > chip8->v[y])
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
                     chip8->v[x] -= chip8->v[y];
                     break;
-                case 0x6:
+                case 0x6: /* 8xy6 - SHR Vx {, Vy} */ /* rxx */
                     chip8->v[x] >>= 1;
                     if((chip8->v[x] & -(chip8->v[x])) == 1)
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
                     break;
-                case 0x7:
+                case 0x7: /* 8xy7 - SUBN Vx, Vy */ /* xrx */
                     if(chip8->v[x] < chip8->v[y])
                         chip8->v[0xF] = 1;
                     else
-                        chip8->v[0xF] = 1;
+                        chip8->v[0xF] = 0;
                     chip8->v[x] -= chip8->v[y];
                     break;
-                case 0xE:
+                case 0xE: /* 8xyE - SHL Vx {, Vy} */
                     chip8->v[x] = chip8->v[x] << 1;
                     if((chip8->v[x] & -(chip8->v[x])) == 1)
                         chip8->v[0xF] = 1;
@@ -183,31 +184,31 @@ bool execute_opcode(chip8_t *chip8)
                     break;
             }
             break;
-        case 0x9:
+        case 0x9: /* 9xy0 - SNE Vx, Vy */
             if(chip8->v[x] != chip8->v[y])
                 chip8->pc += 2;
             break;
-        case 0xA:
+        case 0xA: /* Annn - LD I, addr */
             chip8->I = nnn;
             break;
-        case 0xB:
+        case 0xB: /* Bnnn - JP V0, addr */
             chip8->pc -= 2;
             chip8->pc = nnn + chip8->v[0];
             break;
-        case 0xC:
+        case 0xC: /* Cxkk - RND Vx, byte */
             chip8->v[x] = (rand() % 255) & kk;
             break;
-        case 0xD:
+        case 0xD: /* Dxyn - DRW Vx, Vy, nibble */
             draw(chip8->display, chip8->mem, chip8->I, chip8->v[x], chip8->v[y], n, &(chip8->v[0xF]));
             screen_modified = true;
             break;
         case 0xE:
             switch(kk) {
-                case 0x9E:
+                case 0x9E: /* Ex9E - SKP Vx */
                     if(chip8->key[chip8->v[x]] == 1)
                         chip8->pc += 2;
                     break;
-                case 0xA1:
+                case 0xA1: /* ExA1 - SKNP Vx */
                     if(chip8->key[chip8->v[x]] != 1)
                         chip8->pc += 2;
                     break;
@@ -218,33 +219,33 @@ bool execute_opcode(chip8_t *chip8)
             break;
         case 0xF:
             switch(kk) {
-                case 0x07:
+                case 0x07: /* Fx07 - LD Vx, DT */
                     chip8->v[x] = chip8->dt;
                     break;
-                case 0x0A:
+                case 0x0A: /* Fx0A - LD Vx, K */
                     if(get_key(&(chip8->v[x]), chip8->key) == 0)
                        chip8->pc -= 2;
                     break;
-                case 0x15:
+                case 0x15: /* Fx15 - LD DT, Vx */
                     chip8-> dt = chip8->v[x];
                     break;
-                case 0x18:
+                case 0x18: /* Fx18 - LD ST, Vx */
                     chip8->st = chip8->v[x];
                     break;
-                case 0x1E:
+                case 0x1E: /* Fx1E - ADD I, Vx */
                     chip8->I += chip8->v[x];
                     break;
-                case 0x29:
+                case 0x29: /* Fx29 - LD F, Vx */
                     chip8->I = BYTES_PER_CHAR_SPRITE * chip8->v[x];
                     break;
-                case 0x33:
+                case 0x33: /* Fx33 - LD B, Vx */
                     convert_decimal(chip8->mem, chip8->I, &(chip8->v[x]));
                     break;
-                case 0x55:
+                case 0x55: /* Fx55 LD [I], Vx */
                     for(uint8_t i = 0; i <= x; i++)
                         chip8->mem[chip8->I + i] = chip8->v[i];
                     break;
-                case 0x65:
+                case 0x65: /* Fx65 - LD Vx, [I] */
                     for(uint8_t i = 0; i <= x; i++)
                         chip8->v[i] = chip8->mem[chip8->I + i];
                     chip8->I += x + 1;
