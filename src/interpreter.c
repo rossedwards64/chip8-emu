@@ -61,7 +61,6 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
     uint16_t file_size = ftell(buffer);
     rewind(buffer);
 
-    chip8->mem[0x1FF] = 3;
     if(file_size < PROG_SIZE) {
         fread(&chip8->mem[PROG_START], 1, PROG_SIZE, buffer);
     } else {
