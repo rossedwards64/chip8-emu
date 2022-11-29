@@ -2,22 +2,23 @@
 
 #undef DEBUG
 
-static uint8_t fontset[80] = { 0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
-                        0x20, 0x60, 0x20, 0x20, 0x70,   // 1
-                        0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
-                        0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
-                        0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
-                        0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
-                        0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
-                        0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
-                        0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
-                        0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
-                        0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
-                        0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
-                        0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
-                        0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
-                        0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
-                        0xF0, 0x80, 0xF0, 0x80, 0x80 }; // F
+static uint8_t fontset[80] = {  0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
+                                0x20, 0x60, 0x20, 0x20, 0x70,   // 1
+                                0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
+                                0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
+                                0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
+                                0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
+                                0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
+                                0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
+                                0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
+                                0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
+                                0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
+                                0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
+                                0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
+                                0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
+                                0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
+                                0xF0, 0x80, 0xF0, 0x80, 0x80    // F
+};
 
 #ifdef DEBUG
 void print_mem(chip8_t *chip8)
@@ -60,6 +61,7 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
     uint16_t file_size = ftell(buffer);
     rewind(buffer);
 
+    chip8->mem[0x1FF] = 3;
     if(file_size < PROG_SIZE) {
         fread(&chip8->mem[PROG_START], 1, PROG_SIZE, buffer);
     } else {
@@ -74,6 +76,7 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
     return 0;
 }
 
+/* any opcodes that require temporary variables are separated into a function */
 bool execute_opcode(chip8_t *chip8)
 {
     bool screen_modified = false;
@@ -144,37 +147,33 @@ bool execute_opcode(chip8_t *chip8)
                 case 0x3: /* 8xy3 - XOR Vx, Vy */
                     chip8->v[x] ^= chip8->v[y];
                     break;
-                case 0x4: /* 8xy4 - ADD Vx, Vy */ /* rrx */
-                    if((chip8->v[x] + chip8->v[y]) > 255)
-                        chip8->v[0xF] = 1;
-                    else
-                        chip8->v[0xF] = 0;
-                    chip8->v[x] += chip8->v[y];
+                case 0x4: /* 8xy4 - ADD Vx, Vy */
+                    add_and_check_carry(&chip8->v[x], chip8->v[y], &chip8->v[0xF]);
                     break;
-                case 0x5: /* 8xy5 - SUB Vx, Vy */ /* rrx */
+                case 0x5: /* 8xy5 - SUB Vx, Vy */
+                    chip8->v[x] -= chip8->v[y];
                     if(chip8->v[x] > chip8->v[y])
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
-                    chip8->v[x] -= chip8->v[y];
                     break;
-                case 0x6: /* 8xy6 - SHR Vx {, Vy} */ /* rxx */
-                    chip8->v[x] >>= 1;
-                    if((chip8->v[x] & -(chip8->v[x])) == 1)
+                case 0x6: /* 8xy6 - SHR Vx {, Vy} */
+                    if((chip8->v[x] & 0x1) != 0)
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
+                    chip8->v[x] >>= 1;
                     break;
-                case 0x7: /* 8xy7 - SUBN Vx, Vy */ /* xrx */
+                case 0x7: /* 8xy7 - SUBN Vx, Vy */
+                    chip8->v[x] = chip8->v[y] - chip8->v[x];
                     if(chip8->v[x] < chip8->v[y])
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
-                    chip8->v[x] -= chip8->v[y];
                     break;
                 case 0xE: /* 8xyE - SHL Vx {, Vy} */
-                    chip8->v[x] = chip8->v[x] << 1;
-                    if((chip8->v[x] & -(chip8->v[x])) == 1)
+                    chip8->v[x] <<= 1;
+                    if((chip8->v[x] & 0x80) != 0)
                         chip8->v[0xF] = 1;
                     else
                         chip8->v[0xF] = 0;
@@ -281,6 +280,16 @@ void update_timers(chip8_t *chip8)
         chip8->dt--;
     if(chip8->st > 0)
         chip8->st--;
+}
+
+void add_and_check_carry(uint8_t *v_x, uint8_t v_y, uint8_t *carry_flag)
+{
+    uint16_t result = (*v_x + v_y);
+    *v_x = result & 0xFF;
+    if(result > 255)
+        *carry_flag = 1;
+    else
+        *carry_flag = 0;
 }
 
 void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE],
