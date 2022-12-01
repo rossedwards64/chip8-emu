@@ -43,10 +43,10 @@ uint8_t init_emu(FILE *buffer, chip8_t *chip8)
 {
     srand(0);
     memset(chip8->display, 0, sizeof(bool) * DIS_COLS * DIS_ROWS);
-    memset(chip8->mem, 0, sizeof(chip8->mem) / sizeof(chip8->mem[0]));
-    memset(chip8->v, 0, sizeof(chip8->v) / sizeof(chip8->v[0]));
-    memset(chip8->stack, 0, sizeof(chip8->stack) / sizeof(chip8->stack[0]));
-    memset(chip8->key, 0, sizeof(chip8->key) / sizeof(chip8->key[0]));
+    memset(chip8->mem, 0, ARRAY_SIZE(chip8->mem));
+    memset(chip8->v, 0, ARRAY_SIZE(chip8->v));
+    memset(chip8->stack, 0, ARRAY_SIZE(chip8->stack));
+    memset(chip8->key, 0, ARRAY_SIZE(chip8->key));
     chip8->I = 0;
     chip8->sp = 0;
     chip8->dt = 0;

@@ -3,6 +3,7 @@
 
 #define DEBUG
 
+#define ARRAY_SIZE(arr) (sizeof((arr)) / sizeof((arr[0])))
 #define MEM_SIZE 0x1000
 #define PROG_START 0x200
 #define PROG_SIZE (MEM_SIZE - PROG_START)
