@@ -11,7 +11,7 @@
 #include "util.h"
 
 
-typedef struct chip_8 {
+typedef struct {
         uint8_t mem[MEM_SIZE];    // 4KB of RAM
 
         uint16_t stack[ARR_SIZE]; // can fit sixteen instructions on the stack at a time
@@ -37,15 +37,8 @@ void print_mem(chip8_t *chip8);
 void print_reg(chip8_t *chip8);
 #endif
 
-uint8_t init_emu(FILE *buffer, chip8_t *chip8);
+uint8_t init_emu(chip8_t *chip8, FILE *program);
 bool execute_opcode(chip8_t *chip8);
 void update_timers(chip8_t *chip8);
-
-/* OPCODE FUNCTIONS */
-bool get_key(uint8_t *v_x, bool key[ARR_SIZE]);
-void add_and_check_carry(uint8_t *v_x, uint8_t v_y, uint8_t *carry_flag);
-void draw(bool display[DIS_ROWS][DIS_COLS], uint8_t mem[MEM_SIZE],
-          uint16_t I, uint8_t v_x, uint8_t v_y, uint16_t n, uint8_t *coll_flag);
-void convert_decimal(uint8_t mem[MEM_SIZE], uint16_t I, uint8_t *v_x);
 
 #endif // INTERPRETER_H_

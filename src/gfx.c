@@ -1,6 +1,5 @@
 #include "gfx.h"
 
-
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Event e;

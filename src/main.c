@@ -18,9 +18,9 @@ int main(int argc, char **argv)
     else
         filename = argv[1];
 
-    FILE *file = fopen(filename, "rb");
+    FILE *program = fopen(filename, "rb");
 
-    if (file == NULL)
+    if (program == NULL)
         printf("Couldn't open file.\n");
     else
         printf("Opened file %s.\n", filename);
@@ -32,17 +32,17 @@ int main(int argc, char **argv)
 
     chip8_t chip8;
 
-    if(init_emu(file, &chip8) > 0) {
+    if(init_emu(&chip8, program) > 0) {
         printf("Could not initialise the interpreter.\n");
         return EXIT_FAILURE;
     }
 
-    fclose(file);
+    fclose(program);
 
     while(!quit) {
-        #ifdef DEBUG
+#ifdef DEBUG
         print_reg(&chip8);
-        #endif
+#endif
         if(execute_opcode(&chip8) == SCREEN_MODIFIED)
             render(chip8.display);
         handle_inputs(&quit, chip8.key);
