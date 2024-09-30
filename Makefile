@@ -1,7 +1,7 @@
-CC 	    := gcc
+CC      := gcc
 BIN     ?= chip8
 
-LDLIBS  := -lSDL2 -lSDL2main
+LDLIBS  := -lSDL2
 CFLAGS  := -std=c17 -Wall -Wpedantic -Wextra -g3 -pedantic
 
 SRCDIR  ?= src
